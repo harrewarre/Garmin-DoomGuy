@@ -1,0 +1,17 @@
+# Connect IQ build output
+/bin/
+
+# Connect IQ signing key — PRIVATE. Keep this secret; never commit it.
+developer_key
+*.der
+*.pem
+
+# Local editor / assistant settings
+.claude/settings.local.json
+
+# Sprite pre-processing backups (not needed to build)
+/resources/sprites/_orig/
+
+# OS cruft
+.DS_Store
+Thumbs.db
