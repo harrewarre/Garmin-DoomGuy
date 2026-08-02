@@ -3,16 +3,22 @@ import Toybox.Lang;
 import Toybox.System;
 import Toybox.WatchUi;
 import Toybox.SensorHistory;
+import Toybox.Math;
 
 class DoomGuyView extends WatchUi.WatchFace {
 
     private const BATT_WARN = 20;          // show charge reminder at/below this %
 
     private var _background as BitmapResource?;
-    private var _face as BitmapResource?;
-    private var _faceBucket as Number = -1;
-    private var _faceIds as Array<ResourceId>;
     private var _lastBB as Number = -1;    // last successfully read Body Battery
+
+    // Face pool: _pool[tier] holds the ResourceIds eligible for that health tier
+    // (3 stern glances + 3 mood expressions). A fresh one is chosen on each wake.
+    private var _pool as Array<Array<ResourceId> >;
+    private var _god as ResourceId;
+    private var _dead as ResourceId;
+    private var _wakeFace as BitmapResource?;
+    private var _reroll as Boolean = true;
 
     // Doom red numerals (native glyph height is 18px)
     private const GLYPH_H = 18;
@@ -25,14 +31,21 @@ class DoomGuyView extends WatchUi.WatchFace {
 
     function initialize() {
         WatchFace.initialize();
-        _faceIds = [
-            Rez.Drawables.Face0,
-            Rez.Drawables.Face20,
-            Rez.Drawables.Face40,
-            Rez.Drawables.Face60,
-            Rez.Drawables.Face80,
-            Rez.Drawables.Face100
+        // Per-tier pools: [stern glance x3, mood x3], tier 0 (healthy) .. 4 (bloodied)
+        _pool = [
+            [Rez.Drawables.Fs00, Rez.Drawables.Fs01, Rez.Drawables.Fs02,
+             Rez.Drawables.Fm00, Rez.Drawables.Fm10, Rez.Drawables.Fm20],
+            [Rez.Drawables.Fs10, Rez.Drawables.Fs11, Rez.Drawables.Fs12,
+             Rez.Drawables.Fm01, Rez.Drawables.Fm11, Rez.Drawables.Fm21],
+            [Rez.Drawables.Fs20, Rez.Drawables.Fs21, Rez.Drawables.Fs22,
+             Rez.Drawables.Fm02, Rez.Drawables.Fm12, Rez.Drawables.Fm22],
+            [Rez.Drawables.Fs30, Rez.Drawables.Fs31, Rez.Drawables.Fs32,
+             Rez.Drawables.Fm03, Rez.Drawables.Fm13, Rez.Drawables.Fm23],
+            [Rez.Drawables.Fs40, Rez.Drawables.Fs41, Rez.Drawables.Fs42,
+             Rez.Drawables.Fm04, Rez.Drawables.Fm14, Rez.Drawables.Fm24]
         ];
+        _god = Rez.Drawables.Fgod;
+        _dead = Rez.Drawables.Fdead;
     }
 
     function onLayout(dc as Dc) as Void {
@@ -77,14 +90,32 @@ class DoomGuyView extends WatchUi.WatchFace {
         return _lastBB;
     }
 
-    // Body Battery -> face bucket 0..5 (low == bloodied).
-    private function bucketFor(pct as Number) as Number {
-        var v = pct;
-        if (v < 0) { v = 50; }   // never read yet: neutral face, not godmode
-        var b = (v / 20.0 + 0.5).toNumber();
-        if (b > 5) { b = 5; }
-        if (b < 0) { b = 0; }
-        return b;
+    // Body Battery -> health tier 0 (healthy) .. 4 (bloodied). Doom-style 20% bands.
+    private function tierFor(bb as Number) as Number {
+        if (bb < 0) { return 2; }   // never read yet: neutral mid tier
+        var t = 4 - bb / 20;
+        if (t < 0) { t = 0; }
+        if (t > 4) { t = 4; }
+        return t;
+    }
+
+    // Choose the face to show for this wake: godmode on the charger or at peak
+    // Body Battery (>=95, rare), the dead face when nearly empty, otherwise a
+    // random glance/mood for the current tier.
+    private function chooseFace() as Void {
+        var id = _god;
+        if (!System.getSystemStats().charging) {
+            var bb = getBodyBattery();
+            if (bb >= 95) {
+                id = _god;                   // peak Body Battery: invulnerable (rare)
+            } else if (bb >= 0 && bb <= 5) {
+                id = _dead;
+            } else {
+                var pool = _pool[tierFor(bb)];
+                id = pool[Math.rand() % pool.size()];
+            }
+        }
+        _wakeFace = WatchUi.loadResource(id) as BitmapResource;
     }
 
     // Scale-draw a bitmap with crisp nearest-neighbor filtering (keeps the pixel-art look).
@@ -175,16 +206,14 @@ class DoomGuyView extends WatchUi.WatchFace {
             dc.clear();
         }
 
-        // Body Battery drives the face
-        var bb = getBodyBattery();
-        var bucket = bucketFor(bb);
-        if (bucket != _faceBucket || _face == null) {
-            _faceBucket = bucket;
-            _face = WatchUi.loadResource(_faceIds[bucket]) as BitmapResource;
+        // Body Battery drives the face; a fresh glance/mood is picked on each wake.
+        if (_reroll || _wakeFace == null) {
+            chooseFace();
+            _reroll = false;
         }
 
         // Face: big, upper area
-        var face = _face;
+        var face = _wakeFace;
         if (face != null) {
             var faceH = (h * 0.50).toNumber();
             var fs = faceH.toFloat() / face.getHeight();
@@ -212,6 +241,7 @@ class DoomGuyView extends WatchUi.WatchFace {
     // The user looked at the watch: return to the full face view.
     function onExitSleep() as Void {
         _lowPower = false;
+        _reroll = true;      // glance a fresh face next draw
         WatchUi.requestUpdate();
     }
 

@@ -1,12 +1,41 @@
 <drawables xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://developer.garmin.com/downloads/connect-iq/resources.xsd">
     <bitmap id="LauncherIcon" filename="launcher_icon.svg" dithering="none" />
     <bitmap id="Background" filename="../sprites/bg.png" />
-    <bitmap id="Face0" filename="../sprites/0.png" automaticPalette="false" />
-    <bitmap id="Face20" filename="../sprites/20.png" automaticPalette="false" />
-    <bitmap id="Face40" filename="../sprites/40.png" automaticPalette="false" />
-    <bitmap id="Face60" filename="../sprites/60.png" automaticPalette="false" />
-    <bitmap id="Face80" filename="../sprites/80.png" automaticPalette="false" />
-    <bitmap id="Face100" filename="../sprites/100.png" automaticPalette="false" />
+    <!-- Stern faces: Fs<tier><dir>, tier 0(healthy)..4(bloodied), dir 0..2 (glance) -->
+    <bitmap id="Fs00" filename="../faces/s00.png" automaticPalette="false" />
+    <bitmap id="Fs01" filename="../faces/s01.png" automaticPalette="false" />
+    <bitmap id="Fs02" filename="../faces/s02.png" automaticPalette="false" />
+    <bitmap id="Fs10" filename="../faces/s10.png" automaticPalette="false" />
+    <bitmap id="Fs11" filename="../faces/s11.png" automaticPalette="false" />
+    <bitmap id="Fs12" filename="../faces/s12.png" automaticPalette="false" />
+    <bitmap id="Fs20" filename="../faces/s20.png" automaticPalette="false" />
+    <bitmap id="Fs21" filename="../faces/s21.png" automaticPalette="false" />
+    <bitmap id="Fs22" filename="../faces/s22.png" automaticPalette="false" />
+    <bitmap id="Fs30" filename="../faces/s30.png" automaticPalette="false" />
+    <bitmap id="Fs31" filename="../faces/s31.png" automaticPalette="false" />
+    <bitmap id="Fs32" filename="../faces/s32.png" automaticPalette="false" />
+    <bitmap id="Fs40" filename="../faces/s40.png" automaticPalette="false" />
+    <bitmap id="Fs41" filename="../faces/s41.png" automaticPalette="false" />
+    <bitmap id="Fs42" filename="../faces/s42.png" automaticPalette="false" />
+    <!-- Mood faces: Fm<mood><tier>, mood 0..2 (grin/angry/rampage), tier 0..4 -->
+    <bitmap id="Fm00" filename="../faces/m00.png" automaticPalette="false" />
+    <bitmap id="Fm01" filename="../faces/m01.png" automaticPalette="false" />
+    <bitmap id="Fm02" filename="../faces/m02.png" automaticPalette="false" />
+    <bitmap id="Fm03" filename="../faces/m03.png" automaticPalette="false" />
+    <bitmap id="Fm04" filename="../faces/m04.png" automaticPalette="false" />
+    <bitmap id="Fm10" filename="../faces/m10.png" automaticPalette="false" />
+    <bitmap id="Fm11" filename="../faces/m11.png" automaticPalette="false" />
+    <bitmap id="Fm12" filename="../faces/m12.png" automaticPalette="false" />
+    <bitmap id="Fm13" filename="../faces/m13.png" automaticPalette="false" />
+    <bitmap id="Fm14" filename="../faces/m14.png" automaticPalette="false" />
+    <bitmap id="Fm20" filename="../faces/m20.png" automaticPalette="false" />
+    <bitmap id="Fm21" filename="../faces/m21.png" automaticPalette="false" />
+    <bitmap id="Fm22" filename="../faces/m22.png" automaticPalette="false" />
+    <bitmap id="Fm23" filename="../faces/m23.png" automaticPalette="false" />
+    <bitmap id="Fm24" filename="../faces/m24.png" automaticPalette="false" />
+    <!-- Specials -->
+    <bitmap id="Fdead" filename="../faces/dead.png" automaticPalette="false" />
+    <bitmap id="Fgod" filename="../faces/god.png" automaticPalette="false" />
     <bitmap id="D0" filename="../font/d0.png" automaticPalette="false" />
     <bitmap id="D1" filename="../font/d1.png" automaticPalette="false" />
     <bitmap id="D2" filename="../font/d2.png" automaticPalette="false" />
