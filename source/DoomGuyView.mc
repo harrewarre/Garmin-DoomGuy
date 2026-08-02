@@ -12,9 +12,11 @@ class DoomGuyView extends WatchUi.WatchFace {
     private var _background as BitmapResource?;
     private var _lastBB as Number = -1;    // last successfully read Body Battery
 
-    // Face pool: _pool[tier] holds the ResourceIds eligible for that health tier
-    // (3 stern glances + 3 mood expressions). A fresh one is chosen on each wake.
-    private var _pool as Array<Array<ResourceId> >;
+    // Per tier: a forward-facing default face, plus a set of "variation" faces
+    // (2 side glances + 3 mood expressions) shown only ~1 in VARY_ONE_IN wakes.
+    private const VARY_ONE_IN = 8;
+    private var _front as Array<ResourceId>;
+    private var _vary as Array<Array<ResourceId> >;
     private var _god as ResourceId;
     private var _dead as ResourceId;
     private var _wakeFace as BitmapResource?;
@@ -31,17 +33,22 @@ class DoomGuyView extends WatchUi.WatchFace {
 
     function initialize() {
         WatchFace.initialize();
-        // Per-tier pools: [stern glance x3, mood x3], tier 0 (healthy) .. 4 (bloodied)
-        _pool = [
-            [Rez.Drawables.Fs00, Rez.Drawables.Fs01, Rez.Drawables.Fs02,
+        // Forward-facing default per tier (the centered stern glance, col 1)
+        _front = [
+            Rez.Drawables.Fs01, Rez.Drawables.Fs11, Rez.Drawables.Fs21,
+            Rez.Drawables.Fs31, Rez.Drawables.Fs41
+        ];
+        // Variations per tier: 2 side glances + 3 mood expressions
+        _vary = [
+            [Rez.Drawables.Fs00, Rez.Drawables.Fs02,
              Rez.Drawables.Fm00, Rez.Drawables.Fm10, Rez.Drawables.Fm20],
-            [Rez.Drawables.Fs10, Rez.Drawables.Fs11, Rez.Drawables.Fs12,
+            [Rez.Drawables.Fs10, Rez.Drawables.Fs12,
              Rez.Drawables.Fm01, Rez.Drawables.Fm11, Rez.Drawables.Fm21],
-            [Rez.Drawables.Fs20, Rez.Drawables.Fs21, Rez.Drawables.Fs22,
+            [Rez.Drawables.Fs20, Rez.Drawables.Fs22,
              Rez.Drawables.Fm02, Rez.Drawables.Fm12, Rez.Drawables.Fm22],
-            [Rez.Drawables.Fs30, Rez.Drawables.Fs31, Rez.Drawables.Fs32,
+            [Rez.Drawables.Fs30, Rez.Drawables.Fs32,
              Rez.Drawables.Fm03, Rez.Drawables.Fm13, Rez.Drawables.Fm23],
-            [Rez.Drawables.Fs40, Rez.Drawables.Fs41, Rez.Drawables.Fs42,
+            [Rez.Drawables.Fs40, Rez.Drawables.Fs42,
              Rez.Drawables.Fm04, Rez.Drawables.Fm14, Rez.Drawables.Fm24]
         ];
         _god = Rez.Drawables.Fgod;
@@ -111,8 +118,13 @@ class DoomGuyView extends WatchUi.WatchFace {
             } else if (bb >= 0 && bb <= 5) {
                 id = _dead;
             } else {
-                var pool = _pool[tierFor(bb)];
-                id = pool[Math.rand() % pool.size()];
+                var t = tierFor(bb);
+                if (Math.rand() % VARY_ONE_IN == 0) {
+                    var v = _vary[t];
+                    id = v[Math.rand() % v.size()];   // occasional glance/mood
+                } else {
+                    id = _front[t];                    // usual forward face
+                }
             }
         }
         _wakeFace = WatchUi.loadResource(id) as BitmapResource;
