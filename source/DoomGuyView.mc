@@ -12,6 +12,7 @@ class DoomGuyView extends WatchUi.WatchFace {
     private var _face as BitmapResource?;
     private var _faceBucket as Number = -1;
     private var _faceIds as Array<ResourceId>;
+    private var _lastBB as Number = -1;    // last successfully read Body Battery
 
     // Doom red numerals (native glyph height is 18px)
     private const GLYPH_H = 18;
@@ -55,7 +56,9 @@ class DoomGuyView extends WatchUi.WatchFace {
     function onShow() as Void {
     }
 
-    // Current Body Battery (0-100), or -1 if unavailable.
+    // Current Body Battery (0-100). On a failed/empty read (common right at
+    // wrist-raise) returns the last known value; -1 only before the first
+    // successful read.
     private function getBodyBattery() as Number {
         if ((Toybox has :SensorHistory) && (SensorHistory has :getBodyBatteryHistory)) {
             var iter = SensorHistory.getBodyBatteryHistory({
@@ -65,17 +68,19 @@ class DoomGuyView extends WatchUi.WatchFace {
             if (iter != null) {
                 var sample = iter.next();
                 if (sample != null && sample.data != null) {
-                    return sample.data.toNumber();
+                    _lastBB = sample.data.toNumber();
+                    return _lastBB;
                 }
             }
         }
-        return -1;
+        // Reuse last known instead of falsely flashing full health.
+        return _lastBB;
     }
 
     // Body Battery -> face bucket 0..5 (low == bloodied).
     private function bucketFor(pct as Number) as Number {
         var v = pct;
-        if (v < 0) { v = 100; }   // unknown: show healthy
+        if (v < 0) { v = 50; }   // never read yet: neutral face, not godmode
         var b = (v / 20.0 + 0.5).toNumber();
         if (b > 5) { b = 5; }
         if (b < 0) { b = 0; }
