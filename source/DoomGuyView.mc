@@ -3,6 +3,7 @@ import Toybox.Lang;
 import Toybox.System;
 import Toybox.WatchUi;
 import Toybox.SensorHistory;
+import Toybox.ActivityMonitor;
 import Toybox.Math;
 
 class DoomGuyView extends WatchUi.WatchFace {
@@ -10,6 +11,7 @@ class DoomGuyView extends WatchUi.WatchFace {
     private const BATT_WARN = 20;          // show charge reminder at/below this %
 
     private var _background as BitmapResource?;
+    private var _hudBg as BitmapResource?;
     private var _lastBB as Number = -1;    // last successfully read Body Battery
 
     // Per tier: a forward-facing default face, plus a set of "variation" faces
@@ -27,6 +29,10 @@ class DoomGuyView extends WatchUi.WatchFace {
     private var _digits as Array<BitmapResource>?;
     private var _colon as BitmapResource?;
     private var _pct as BitmapResource?;
+
+    // HUD (yellow small Doom font): 3 stat labels + digits 0-9
+    private var _labels as Array<BitmapResource>?;   // [RCRY, STRS, STPS]
+    private var _hy as Array<BitmapResource>?;        // yellow digits
 
     // Always-on (low-power) mode: clock text only, on black, for AMOLED burn-in safety
     private var _lowPower as Boolean = false;
@@ -57,6 +63,7 @@ class DoomGuyView extends WatchUi.WatchFace {
 
     function onLayout(dc as Dc) as Void {
         _background = WatchUi.loadResource(Rez.Drawables.Background) as BitmapResource;
+        _hudBg = WatchUi.loadResource(Rez.Drawables.HudBg) as BitmapResource;
         _digits = [
             WatchUi.loadResource(Rez.Drawables.D0) as BitmapResource,
             WatchUi.loadResource(Rez.Drawables.D1) as BitmapResource,
@@ -71,6 +78,23 @@ class DoomGuyView extends WatchUi.WatchFace {
         ];
         _colon = WatchUi.loadResource(Rez.Drawables.Colon) as BitmapResource;
         _pct = WatchUi.loadResource(Rez.Drawables.Pct) as BitmapResource;
+        _labels = [
+            WatchUi.loadResource(Rez.Drawables.Hrcry) as BitmapResource,
+            WatchUi.loadResource(Rez.Drawables.Hstrs) as BitmapResource,
+            WatchUi.loadResource(Rez.Drawables.Hstps) as BitmapResource
+        ];
+        _hy = [
+            WatchUi.loadResource(Rez.Drawables.Hy0) as BitmapResource,
+            WatchUi.loadResource(Rez.Drawables.Hy1) as BitmapResource,
+            WatchUi.loadResource(Rez.Drawables.Hy2) as BitmapResource,
+            WatchUi.loadResource(Rez.Drawables.Hy3) as BitmapResource,
+            WatchUi.loadResource(Rez.Drawables.Hy4) as BitmapResource,
+            WatchUi.loadResource(Rez.Drawables.Hy5) as BitmapResource,
+            WatchUi.loadResource(Rez.Drawables.Hy6) as BitmapResource,
+            WatchUi.loadResource(Rez.Drawables.Hy7) as BitmapResource,
+            WatchUi.loadResource(Rez.Drawables.Hy8) as BitmapResource,
+            WatchUi.loadResource(Rez.Drawables.Hy9) as BitmapResource
+        ];
     }
 
     function onShow() as Void {
@@ -193,6 +217,104 @@ class DoomGuyView extends WatchUi.WatchFace {
         ]);
     }
 
+    // Current stress 0-100: prefer ActivityMonitor.stressScore (API 5), else
+    // the newest SensorHistory stress sample, else -1 (unknown).
+    private function getStress(info as ActivityMonitor.Info) as Number {
+        if (info has :stressScore && info.stressScore != null) {
+            return info.stressScore;
+        }
+        if ((Toybox has :SensorHistory) && (SensorHistory has :getStressHistory)) {
+            var iter = SensorHistory.getStressHistory({
+                :period => 1,
+                :order => SensorHistory.ORDER_NEWEST_FIRST
+            });
+            if (iter != null) {
+                var s = iter.next();
+                if (s != null && s.data != null) { return s.data.toNumber(); }
+            }
+        }
+        return -1;
+    }
+
+    // Map a non-negative number to yellow HUD digit bitmaps.
+    private function hudDigits(n as Number) as Array<BitmapResource> {
+        var hy = _hy;
+        var out = [] as Array<BitmapResource>;
+        if (hy == null) { return out; }
+        if (n <= 0) { return [hy[0]]; }
+        var stack = [] as Array<Number>;
+        while (n > 0) { stack.add(n % 10); n = n / 10; }
+        for (var i = stack.size() - 1; i >= 0; i--) { out.add(hy[stack[i]]); }
+        return out;
+    }
+
+    // Draw a run of HUD glyph bitmaps left-aligned from xLeft, vertically centred
+    // on cy, scaled to targetH tall.
+    private function drawHudText(dc as Dc, xLeft as Number, cy as Number, targetH as Number,
+                                bmps as Array<BitmapResource>) as Void {
+        if (bmps.size() == 0) { return; }
+        var gap = (targetH * 0.14).toNumber();
+        if (gap < 1) { gap = 1; }
+        var x = xLeft;
+        var y = cy - targetH / 2;
+        for (var i = 0; i < bmps.size(); i++) {
+            var b = bmps[i];
+            var gw = b.getWidth() * targetH / b.getHeight();
+            drawSprite(dc, x, y, gw, targetH, b);
+            x += gw + gap;
+        }
+    }
+
+    // Doom-HUD panel on the right: RCRY (recovery hrs), STRS (stress), STPS (steps).
+    private function drawHud(dc as Dc, w as Number, h as Number) as Void {
+        var labels = _labels;
+        if (labels == null) { return; }
+        var info = ActivityMonitor.getInfo();
+
+        var recovery = 0;
+        if (info has :timeToRecovery && info.timeToRecovery != null) {
+            recovery = info.timeToRecovery;
+        }
+        var stress = getStress(info);
+        if (stress < 0) { stress = 0; }
+        var steps = 0;
+        if (info.steps != null) { steps = info.steps; }
+        var vals = [recovery, stress, steps];
+
+        // HUD texture anchored to the top-right: it bleeds off the top and right
+        // edges so it reads as a fixed section rather than a floating card.
+        var pLeft = (w * 0.58).toNumber();
+        var pBottom = (h * 0.66).toNumber();
+        var pw = w - pLeft;
+        if (_hudBg != null) {
+            dc.drawScaledBitmap(pLeft, 0, pw, pBottom, _hudBg);
+        } else {
+            dc.setColor(0x2A2A26, Graphics.COLOR_TRANSPARENT);
+            dc.fillRectangle(pLeft, 0, pw, pBottom);
+        }
+        // Dark bevel on the two visible (inner) edges
+        dc.setColor(0x14140F, Graphics.COLOR_TRANSPARENT);
+        dc.setPenWidth(3);
+        dc.drawLine(pLeft, 0, pLeft, pBottom);
+        dc.drawLine(pLeft, pBottom, w, pBottom);
+        dc.setPenWidth(1);
+
+        // Stat rows, left-aligned. Bottom-anchor the block so the gap below the last
+        // counter matches the gap to the left of the labels (pad), for consistency.
+        var pad = (pw * 0.12).toNumber();
+        var textLeft = pLeft + pad;
+        var rowH = (h * 0.17).toNumber();
+        var labelH = (rowH * 0.34).toNumber();
+        var valueH = (rowH * 0.46).toNumber();
+        var vOff = (rowH * 0.20).toNumber();
+        var blockCy = pBottom - pad - valueH / 2 - vOff - rowH;
+        for (var i = 0; i < 3; i++) {
+            var rcy = blockCy + (i - 1) * rowH;
+            drawHudText(dc, textLeft, rcy - vOff, labelH, [labels[i]]);
+            drawHudText(dc, textLeft, rcy + vOff, valueH, hudDigits(vals[i]));
+        }
+    }
+
     function onUpdate(dc as Dc) as Void {
         var w = dc.getWidth();
         var h = dc.getHeight();
@@ -224,18 +346,22 @@ class DoomGuyView extends WatchUi.WatchFace {
             _reroll = false;
         }
 
-        // Face: big, upper area
+        // Face: the hero, shifted left to make room for the HUD
         var face = _wakeFace;
         if (face != null) {
-            var faceH = (h * 0.50).toNumber();
+            var faceH = (h * 0.46).toNumber();
             var fs = faceH.toFloat() / face.getHeight();
             var faceW = (face.getWidth() * fs).toNumber();
-            var faceCy = (h * 0.36).toNumber();
-            drawSprite(dc, cx - faceW / 2, faceCy - faceH / 2, faceW, faceH, face);
+            var faceCx = (w * 0.32).toNumber();
+            var faceCy = (h * 0.42).toNumber();
+            drawSprite(dc, faceCx - faceW / 2, faceCy - faceH / 2, faceW, faceH, face);
         }
 
-        // Time: red Doom numerals, below the face
-        drawTime(dc, cx, (h * 0.77).toNumber(), (h * 0.18).toNumber());
+        // HUD panel (recovery / stress / steps) on the right
+        drawHud(dc, w, h);
+
+        // Time: red Doom numerals, along the bottom
+        drawTime(dc, cx, (h * 0.82).toNumber(), (h * 0.14).toNumber());
 
         // Low-battery charge reminder: just the value, in the Doom font (only at/below threshold)
         var devBatt = System.getSystemStats().battery;
@@ -243,7 +369,7 @@ class DoomGuyView extends WatchUi.WatchFace {
             var seq = [] as Array<BitmapResource>;
             appendNumber(seq, devBatt.toNumber());
             seq.add(_pct);
-            drawGlyphs(dc, cx, (h * 0.92).toNumber(), (h * 0.08).toNumber(), seq);
+            drawGlyphs(dc, cx, (h * 0.93).toNumber(), (h * 0.06).toNumber(), seq);
         }
     }
 

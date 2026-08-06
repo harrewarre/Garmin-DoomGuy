@@ -1,6 +1,7 @@
 <drawables xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://developer.garmin.com/downloads/connect-iq/resources.xsd">
     <bitmap id="LauncherIcon" filename="launcher_icon.svg" dithering="none" />
     <bitmap id="Background" filename="../sprites/bg.png" />
+    <bitmap id="HudBg" filename="../sprites/hud_bg.png" />
     <!-- Stern faces: Fs<tier><dir>, tier 0(healthy)..4(bloodied), dir 0..2 (glance) -->
     <bitmap id="Fs00" filename="../faces/s00.png" automaticPalette="false" />
     <bitmap id="Fs01" filename="../faces/s01.png" automaticPalette="false" />
@@ -48,4 +49,18 @@
     <bitmap id="D9" filename="../font/d9.png" automaticPalette="false" />
     <bitmap id="Colon" filename="../font/colon.png" automaticPalette="false" />
     <bitmap id="Pct" filename="../font/pct.png" automaticPalette="false" />
+    <!-- HUD: yellow small Doom font (labels + digits) -->
+    <bitmap id="Hrcry" filename="../hud/RCRY.png" automaticPalette="false" />
+    <bitmap id="Hstrs" filename="../hud/STRS.png" automaticPalette="false" />
+    <bitmap id="Hstps" filename="../hud/STPS.png" automaticPalette="false" />
+    <bitmap id="Hy0" filename="../hud/y0.png" automaticPalette="false" />
+    <bitmap id="Hy1" filename="../hud/y1.png" automaticPalette="false" />
+    <bitmap id="Hy2" filename="../hud/y2.png" automaticPalette="false" />
+    <bitmap id="Hy3" filename="../hud/y3.png" automaticPalette="false" />
+    <bitmap id="Hy4" filename="../hud/y4.png" automaticPalette="false" />
+    <bitmap id="Hy5" filename="../hud/y5.png" automaticPalette="false" />
+    <bitmap id="Hy6" filename="../hud/y6.png" automaticPalette="false" />
+    <bitmap id="Hy7" filename="../hud/y7.png" automaticPalette="false" />
+    <bitmap id="Hy8" filename="../hud/y8.png" automaticPalette="false" />
+    <bitmap id="Hy9" filename="../hud/y9.png" automaticPalette="false" />
 </drawables>

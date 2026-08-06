@@ -12,8 +12,8 @@ developer_key
 # Sprite pre-processing backups (not needed to build)
 /resources/sprites/_orig/
 
-# Source spritesheet the faces were extracted from (not needed to build)
-/assets/doom-faces.png
+# Source art the faces/fonts/HUD were extracted from (not needed to build)
+/assets/
 
 # OS cruft
 .DS_Store
