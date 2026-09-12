@@ -6,7 +6,9 @@ A **DOOM**-themed watch face for Garmin Forerunner devices. The classic DOOM sta
 
 ## Features
 
-- **Body Battery = health.** The face cycles through the six classic DOOM mugshots based on your current Body Battery (100 → healthy, 0 → bloodied).
+- **Body Battery = health.** The face steps through five DOOM health tiers in 20% bands based on your current Body Battery (100 → healthy, 0 → bloodied). At 95+ (or while charging) you get the god-mode face; at 5 or below, the dead one.
+- **Face variations.** Roughly 1 in 8 wrist-raises the marine glances to the side or pulls a mood face (grin, angry, rampage) for the current tier instead of the usual stern stare.
+- **DOOM HUD stat panel.** A status-bar panel on the right shows **RCRY** (recovery time in hours), **STRS** (stress) and **STPS** (steps) in the small yellow DOOM font.
 - **Real DOOM font.** The time is rendered with the actual DOOM numerals — extracted from the game's bitmap font and composited glyph-by-glyph — in DOOM red.
 - **Crisp pixel art.** Sprites are scaled with nearest-neighbor filtering (`drawBitmap2` + `FILTER_MODE_POINT`) so everything stays sharp and blocky instead of blurred.
 - **Low-battery reminder.** When the *device* battery drops to 20% or below, the percentage appears at the bottom in the DOOM font — time to charge.
@@ -16,7 +18,7 @@ A **DOOM**-themed watch face for Garmin Forerunner devices. The classic DOOM sta
 
 AMOLED Forerunners with enhanced-graphics support:
 
-> Forerunner **170**, **265**, **265S**, **570** (42 mm / 47 mm), **965**, **970**
+> Forerunner **170** (`fr170` and `fr170m`), **265**, **265S**, **570** (42 mm / 47 mm), **965**, **970**
 
 Devices without runtime bitmap scaling (e.g. FR165, the FR255 family) and the MIP-display FR955 are intentionally not targeted — the pixel-art look relies on a full-color AMOLED display.
 
@@ -48,8 +50,10 @@ monkey.jungle           Build configuration
 source/                 Monkey C source (app + watch-face view)
 resources/
   drawables/            Drawable + launcher-icon definitions
-  sprites/              Doom face mugshots (0–100) + stone background
-  font/                 Doom numerals extracted as glyph bitmaps
+  faces/                Doom mugshots: stern (s<tier><glance>), mood (m<mood><tier>), god, dead
+  sprites/              Stone background + HUD panel texture
+  font/                 Red Doom numerals, colon and % extracted as glyph bitmaps
+  hud/                  Yellow small Doom font: RCRY/STRS/STPS labels + digits
   layouts/  strings/    Layout + string resources
 ```
 
